@@ -1,0 +1,77 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="@color/default_background_color">
+
+    <!-- Основная информация -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/nicknameTextView"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Player"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/default_text_color"/>
+
+        <TextView
+            android:id="@+id/ratingTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Рейтинг: 1500"
+            android:textSize="24dp"
+            android:textColor="@color/default_text_color"/>
+    </LinearLayout>
+
+    <!-- Дополнительные данные (по умолчанию скрыты) -->
+    <LinearLayout
+        android:id="@+id/detailsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:padding="8dp"
+        android:background="@color/default_background_color">
+
+        <com.example.mobilecheckers.customComponents.StatTextField
+            android:id="@+id/winsTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:textFieldText="Победы:"
+            android:textColor="@color/default_text_color"/>
+
+        <com.example.mobilecheckers.customComponents.StatTextField
+            android:id="@+id/lossesTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:textFieldText="Поражения:"
+            android:textColor="@color/default_text_color"/>
+
+        <com.example.mobilecheckers.customComponents.StatTextField
+            android:id="@+id/avgMovesTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:textFieldText="Среднее число ходов:"
+            android:textColor="@color/default_text_color"/>
+        <Button
+            android:id="@+id/toProfileButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="К профилю"
+            android:textSize="20dp"
+            android:background="@color/white"
+            android:textColor="@color/black"
+            android:paddingHorizontal="10dp">
+
+        </Button>
+    </LinearLayout>
+</LinearLayout>
