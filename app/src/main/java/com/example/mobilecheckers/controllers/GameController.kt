@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroupOverlay
@@ -14,6 +16,8 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.children
@@ -21,6 +25,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.mobilecheckers.GameActivity
 import com.example.mobilecheckers.MainActivity
 import com.example.mobilecheckers.R
+import com.example.mobilecheckers.customComponents.StatTextField
 import com.example.mobilecheckers.models.Checker
 import com.example.mobilecheckers.ui.theme.BlackCell
 import com.example.mobilecheckers.ui.theme.WhiteCell
@@ -81,11 +86,45 @@ class GameController(private val gameActivity: GameActivity) {
         }
 
     }
+    fun setupStatPanel(view:View){
+        view.post {
+            val currentTurn = view.findViewById<StatTextField>(R.id.playerMoveText)
+            val currentTurnText = currentTurn.findViewById<TextView>(R.id.numberField)
+            viewModel.currentPlayerTurn.observe(gameActivity) {
+                currentTurnText.text = viewModel.getCurrentPlayerTurn().toString()
+                println(currentTurnText.text)
+            }
+            val playerMoveCount = view.findViewById<StatTextField>(R.id.playerMoveCountText)
+            val playerMoveCountText = playerMoveCount.findViewById<TextView>(R.id.numberField)
+            viewModel.currentTurnCount.observe(gameActivity) {
+                playerMoveCountText.text = viewModel.getCurrentTurnCount().toString()
+                println(playerMoveCountText.text)
+            }
+            val whiteCount = view.findViewById<StatTextField>(R.id.whiteCountText)
+            val whiteCountText = whiteCount.findViewById<TextView>(R.id.numberField)
+            viewModel.currentWhiteCount.observe(gameActivity) {
+                whiteCountText.text = viewModel.getCurrentWhiteCount().toString()
+                println(whiteCountText.text)
+            }
+
+            val blackCount = view.findViewById<StatTextField>(R.id.blackCountText)
+            val blackCountText = blackCount.findViewById<TextView>(R.id.numberField)
+            viewModel.currentBlackCount.observe(gameActivity) {
+                blackCountText.text = viewModel.getCurrentBlackCount().toString()
+                println(blackCountText.text)
+            }
+        }
+    }
     fun setupNavPanel(navLayout: LinearLayout){
         val backButton: Button = navLayout.findViewById(R.id.backButton)
         backButton.setOnClickListener({
             val intent: Intent = Intent(gameActivity, MainActivity::class.java)
             viewModel.resetCheckers()
+            viewModel.resetCurrentTurnCountState()
+            viewModel.resetCurrentPlayerTurnState()
+            viewModel.resetIsPlayerWhiteState()
+            viewModel.resetCurrentWhiteCountState()
+            viewModel.resetCurrentBlackCountState()
             gameActivity.startActivity(intent)
         })
     }
@@ -131,9 +170,35 @@ class GameController(private val gameActivity: GameActivity) {
                 viewModel.restoreCheckersState(it)
             }
             val savedCurrentChecker = bundle.getParcelable<Checker>("current_checker")
-            println(savedCurrentChecker)
-            savedCurrentChecker!!.let {
-                viewModel.restoreCurrentCheckerValue(it)
+            if(savedCurrentChecker != null){
+                savedCurrentChecker.let {
+                    viewModel.restoreCurrentCheckerValue(it)
+                }
+            }
+            else{
+                viewModel.selectedChecker.value = null
+            }
+
+            val savedPlayerWhite = bundle.getBoolean("is_player_white")
+            savedPlayerWhite.let {
+                viewModel.restoreIsPlayerWhiteState(it)
+            }
+            val savedCurrentTurn = bundle.getInt("current_turn")
+            savedCurrentTurn.let {
+                viewModel.restoreCurrentPlayerTurnState(it)
+            }
+            val savedCurrentTurnCount = bundle.getInt("turn_count")
+            savedCurrentTurnCount.let {
+                viewModel.restoreCurrentTurnCountState(it)
+            }
+            val savedBlackCount = bundle.getInt("black_count")
+            savedBlackCount.let {
+                viewModel.restoreBlackCountState(it)
+            }
+
+            val savedWhiteCount = bundle.getInt("white_count")
+            savedWhiteCount.let {
+                viewModel.restoreWhiteCountState(it)
             }
         }
     }
@@ -141,6 +206,11 @@ class GameController(private val gameActivity: GameActivity) {
         val checkersState = viewModel.saveCheckersState()
         outState.putParcelableArrayList("checkers_state", ArrayList(checkersState))
         outState.putParcelable("current_checker",viewModel.currentCheckerValue())
+        outState.putBoolean("is_player_white",viewModel.getIsPlayerWhite())
+        outState.putInt("current_turn",viewModel.getCurrentPlayerTurn())
+        outState.putInt("turn_count",viewModel.getCurrentTurnCount())
+        outState.putInt("white_count",viewModel.getCurrentWhiteCount())
+        outState.putInt("black_count",viewModel.getCurrentBlackCount())
     }
 
     // Функция перемещения шашки на выбранную клетку
@@ -233,9 +303,28 @@ class GameController(private val gameActivity: GameActivity) {
         else{
             viewModel.increaseTurnCount()
             viewModel.changeCurrentTurn()
+            setWinner()
         }
     }
 
+    // Устанавливаем победителя
+    fun setWinner(){
+        if(viewModel.getCurrentBlackCount() == 0 && viewModel.getIsPlayerWhite()){
+            showToastAndNavigate(0)
+        }
+        else if (viewModel.getCurrentWhiteCount() == 0 && !viewModel.getIsPlayerWhite()){
+            showToastAndNavigate(1)
+        }
+    }
+    fun showToastAndNavigate(winner:Int) {
+        Toast.makeText(gameActivity, "Победитель ${winner}", Toast.LENGTH_SHORT).show()
+
+        // Задержка перед переходом (чтобы Toast успел показаться)
+        Handler(Looper.getMainLooper()).postDelayed({
+            val intent = Intent(gameActivity, MainActivity::class.java)
+            gameActivity.startActivity(intent)
+        }, 3000) // 1 секунда задержки
+    }
 
 
 }

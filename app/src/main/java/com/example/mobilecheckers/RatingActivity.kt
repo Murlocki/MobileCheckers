@@ -48,6 +48,12 @@ class RatingActivity : ComponentActivity() {
                 val inflater = LayoutInflater.from(context)
                 val view = inflater.inflate(R.layout.rating_layout,null)
 
+//                val dbHelper = DatabaseHelper(this)
+//                dbHelper.addPlayer(Player("fer",2,3,4.0))
+//                dbHelper.addPlayer(Player("ferka",4,3,5.0))
+//                dbHelper.addPlayer(Player("ferfa",5,3,6.0))
+//                dbHelper.addPlayer(Player("ferpo",6,3,7.0))
+//                dbHelper.addPlayer(Player("ferpoloe",1,3,7.0))
                 ratingViewController.settingPlayersFromDB(view)
 
                 val navLayout: LinearLayout = view.findViewById(R.id.navPanel)

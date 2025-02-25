@@ -63,6 +63,8 @@ class GameActivity : ComponentActivity() {
                 val navLayout: LinearLayout = view.findViewById(R.id.navPanel)
                 this.controller.setupNavPanel(navLayout)
 
+                val statView = view.findViewById<View>(R.id.stat_layout)
+                this.controller.setupStatPanel(statView)
                 view
             },
             modifier = modifier.fillMaxSize()

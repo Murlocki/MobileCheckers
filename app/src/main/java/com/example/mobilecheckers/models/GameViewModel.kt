@@ -1,6 +1,7 @@
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.mobilecheckers.models.Checker
+import kotlin.math.sign
 import kotlin.random.Random
 
 class GameViewModel : ViewModel() {
@@ -10,10 +11,64 @@ class GameViewModel : ViewModel() {
 
     var isPlayerWhite = MutableLiveData<Boolean>()
     var currentPlayerTurn = MutableLiveData<Int>()
-    var currentTurnCounts = MutableLiveData<Int>()
-    var currentWhiteCounts = MutableLiveData<Int>()
-    var currentBlackCounts = MutableLiveData<Int>()
+    var currentTurnCount = MutableLiveData<Int>()
+    var currentWhiteCount = MutableLiveData<Int>()
+    var currentBlackCount = MutableLiveData<Int>()
 
+    // Управление состоянием цвета игрока
+    fun getIsPlayerWhite(): Boolean {
+        return this.isPlayerWhite.value ?: false
+    }
+    fun restoreIsPlayerWhiteState(savedPlayerWhite: Boolean) {
+        isPlayerWhite.value = savedPlayerWhite
+    }
+    fun resetIsPlayerWhiteState(){
+        isPlayerWhite.value = false
+    }
+
+    // Управление состоянием текущего хода
+    fun getCurrentPlayerTurn():Int{
+        return currentPlayerTurn.value ?: 0
+    }
+    fun restoreCurrentPlayerTurnState(currentPlayerTurn: Int) {
+        this.currentPlayerTurn.value = currentPlayerTurn
+    }
+    fun resetCurrentPlayerTurnState(){
+        this.currentPlayerTurn.value = if(isPlayerWhite.value!!) 0 else 1
+    }
+
+    // Управление состоянием количества совершенных ходов
+    fun getCurrentTurnCount():Int{
+        return currentTurnCount.value ?: 0
+    }
+    fun restoreCurrentTurnCountState(currentTurnCount: Int) {
+        this.currentTurnCount.value = currentTurnCount
+    }
+    fun resetCurrentTurnCountState(){
+        this.currentTurnCount.value = 0
+    }
+
+    // Управление состоянием количества белых шашек
+    fun getCurrentWhiteCount():Int{
+        return currentWhiteCount.value ?: 12
+    }
+    fun restoreWhiteCountState(currentWhiteCount: Int) {
+        this.currentWhiteCount.value = currentWhiteCount
+    }
+    fun resetCurrentWhiteCountState(){
+        this.currentWhiteCount.value = 12
+    }
+
+    // Управление состоянием количества черных шашек
+    fun getCurrentBlackCount():Int{
+        return currentBlackCount.value ?: 0
+    }
+    fun restoreBlackCountState(currentBlackCount: Int) {
+        this.currentBlackCount.value = currentBlackCount
+    }
+    fun resetCurrentBlackCountState(){
+        this.currentBlackCount.value = 12
+    }
 
     var currentMove: List<Pair<Int, Int>> = listOf()
     var currentAttack: List<Triple<Int, Int, Checker>> = listOf()
@@ -32,8 +87,8 @@ class GameViewModel : ViewModel() {
 //                loadedCheckers.add(Checker(row, if (row % 2 == 0) col + 1 else col, !isPlayerWhite.value!!))
 //            }
 //        }
-        loadedCheckers.add(Checker(2,5,!isPlayerWhite.value!!))
-        loadedCheckers.add(Checker(4,3,!isPlayerWhite.value!!))
+        loadedCheckers.add(Checker(1,6,!isPlayerWhite.value!!))
+        loadedCheckers.add(Checker(3,4,!isPlayerWhite.value!!))
         // Шашки игрока
         for (row in 5..7) {
             for (col in 0 until 8 step 2) {
@@ -42,10 +97,10 @@ class GameViewModel : ViewModel() {
         }
 
         checkers.value = loadedCheckers
-        currentBlackCounts.value = 12
-        currentWhiteCounts.value = 12
+        currentBlackCount.value = 2
+        currentWhiteCount.value = 2
         currentPlayerTurn.value = if(isPlayerWhite.value!!) 0 else 1
-        currentTurnCounts.value = 0
+        currentTurnCount.value = 0
     }
 
     fun saveCheckersState(): List<Checker> {
@@ -89,13 +144,16 @@ class GameViewModel : ViewModel() {
         for ((rowOffset, colOffset) in attackDirections){
             val newRow = checker.row + rowOffset
             val newCol = checker.col + colOffset
-            if (newRow in 0 until 8 && newCol in 0 until 8 && isOccupied(newRow, newCol)
-                && isEnemy(newRow,newCol)){
-                val jumpRow = newRow + rowOffset
-                val jumpCol = newCol + colOffset
-                if (jumpRow in 0 until 8 && jumpCol in 0 until 8 && !isOccupied(jumpRow, jumpCol)
-                ) {
-                    attackMoves.add(Triple(jumpRow, jumpCol,returnCheckerAtPos(newRow,newCol) as Checker))
+            val maxOffSet = if(!checker.isQueen) 1 else 8
+            for(offSet in 1..maxOffSet){
+                if (newRow in 0 until 8 && newCol in 0 until 8 && isOccupied(newRow, newCol)
+                    && isEnemy(newRow,newCol)){
+                    val jumpRow = newRow + sign(rowOffset.toDouble()) * offSet
+                    val jumpCol = newCol + sign(colOffset.toDouble()) * offSet
+                    if (jumpRow.toInt() in 0 until 8 && jumpCol.toInt() in 0 until 8 && !isOccupied(jumpRow.toInt(), jumpCol.toInt())
+                    ) {
+                        attackMoves.add(Triple(jumpRow.toInt(), jumpCol.toInt(),returnCheckerAtPos(newRow,newCol) as Checker))
+                    }
                 }
             }
         }
@@ -109,7 +167,6 @@ class GameViewModel : ViewModel() {
     }
 
     private fun returnCheckerAtPos(row: Int,col: Int) = checkers.value?.find { it.row == row && it.col == col }
-
     private fun isOccupied(row: Int, col: Int): Boolean {
         return checkers.value?.any { it.row == row && it.col == col } == true
     }
@@ -131,19 +188,20 @@ class GameViewModel : ViewModel() {
     }
 
 
+
     //Управление статистикой
     fun increaseTurnCount(){
-        this.currentTurnCounts.value = this.currentTurnCounts.value?.plus(1)
+        this.currentTurnCount.value = this.currentTurnCount.value?.plus(1)
     }
     fun changeCurrentTurn(){
         this.currentPlayerTurn.value = if(this.currentPlayerTurn.value == 1) 0 else 1
     }
     fun decraseRemainCount(isWhite:Boolean){
         if(isWhite){
-            this.currentWhiteCounts.value = this.currentWhiteCounts.value!!.minus(1)
+            this.currentWhiteCount.value = this.currentWhiteCount.value!!.minus(1)
         }
         else{
-            this.currentBlackCounts.value = this.currentBlackCounts.value!!.minus(1)
+            this.currentBlackCount.value = this.currentBlackCount.value!!.minus(1)
         }
     }
 }

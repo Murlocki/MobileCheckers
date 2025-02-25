@@ -66,7 +66,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             null,
             null,
             null,
-            null
+            COLUMN_RATING,
+
         )
 
         if (cursor.moveToFirst()) {
@@ -82,7 +83,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
 
         cursor.close()
-        return playerList
+        return playerList.reversed()
     }
 
     // Получение игрока по id

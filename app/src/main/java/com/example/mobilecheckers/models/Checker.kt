@@ -52,7 +52,7 @@ data class Checker(var row: Int, var col: Int, val isWhite: Boolean,var isQueen:
         }
         else{
             val res = mutableListOf<Pair<Int,Int>>()
-            for(i in 1..4){
+            for(i in 1..8){
                 res.add(Pair(i,i))
                 res.add(Pair(-i,i))
                 res.add(Pair(i,-i))
@@ -67,7 +67,7 @@ data class Checker(var row: Int, var col: Int, val isWhite: Boolean,var isQueen:
         }
         else{
             val res = mutableListOf<Pair<Int,Int>>()
-            for(i in 1..4){
+            for(i in 1..8){
                 res.add(Pair(i,i))
                 res.add(Pair(-i,i))
                 res.add(Pair(i,-i))

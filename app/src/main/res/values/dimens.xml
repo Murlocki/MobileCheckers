@@ -21,4 +21,5 @@
     <dimen name="nav_layout_back_button_corner_radius">100dp</dimen>
     <dimen name="nav_layout_back_button_text_size">20sp</dimen>
     <dimen name="nav_layout_back_button_paddings">15dp</dimen>
+    <dimen name="stat_text_size">20sp</dimen>
 </resources>
