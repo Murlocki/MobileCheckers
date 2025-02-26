@@ -82,13 +82,11 @@ class GameViewModel : ViewModel() {
         val loadedCheckers = mutableListOf<Checker>()
         isPlayerWhite.value = Random.nextBoolean()
         // Шашки врага
-//        for (row in 0..2) {
-//            for (col in 0 until 8 step 2) {
-//                loadedCheckers.add(Checker(row, if (row % 2 == 0) col + 1 else col, !isPlayerWhite.value!!))
-//            }
-//        }
-        loadedCheckers.add(Checker(1,6,!isPlayerWhite.value!!))
-        loadedCheckers.add(Checker(3,4,!isPlayerWhite.value!!))
+        for (row in 0..2) {
+            for (col in 0 until 8 step 2) {
+                loadedCheckers.add(Checker(row, if (row % 2 == 0) col + 1 else col, !isPlayerWhite.value!!))
+            }
+        }
         // Шашки игрока
         for (row in 5..7) {
             for (col in 0 until 8 step 2) {
@@ -96,10 +94,15 @@ class GameViewModel : ViewModel() {
             }
         }
 
+//        loadedCheckers.add(Checker(6,1, isPlayerWhite.value!!))
+//        loadedCheckers.add(Checker(4,1, isPlayerWhite.value!!))
+//        loadedCheckers.add(Checker(3,0, !isPlayerWhite.value!!))
+
+
         checkers.value = loadedCheckers
-        currentBlackCount.value = 2
-        currentWhiteCount.value = 2
-        currentPlayerTurn.value = if(isPlayerWhite.value!!) 0 else 1
+        currentBlackCount.value = 12
+        currentWhiteCount.value = 12
+        currentPlayerTurn.value = 0
         currentTurnCount.value = 0
     }
 
@@ -114,6 +117,9 @@ class GameViewModel : ViewModel() {
         checkers.value?.clear()
     }
     fun selectChecker(checker: Checker?) {
+        if(currentPlayerTurn.value == 0 && !isPlayerWhite.value!!
+            || currentPlayerTurn.value == 1 && isPlayerWhite.value!!) return
+
         if (selectedChecker.value == checker){
             selectedChecker.value = null
             return
@@ -128,8 +134,7 @@ class GameViewModel : ViewModel() {
         val possibleMoves = mutableListOf<Pair<Int, Int>>()
         val attackMoves = mutableListOf<Triple<Int, Int,Checker>>()
 
-        val directions = selectedChecker.value!!.getPossibleMoves()
-
+        val directions = if(selectedChecker.value!!.isWhite != isPlayerWhite.value)selectedChecker.value!!.getPossibleEnemyMoves() else selectedChecker.value!!.getPossibleMoves()
 
         for ((rowOffset, colOffset) in directions) {
             val newRow = checker.row + rowOffset
@@ -140,7 +145,7 @@ class GameViewModel : ViewModel() {
         }
         this.currentMove = possibleMoves
 
-        val attackDirections = selectedChecker.value!!.getPossibleAttackMoves()
+        val attackDirections = if(selectedChecker.value!!.isWhite != isPlayerWhite.value)selectedChecker.value!!.getPossibleEnemyAttackMoves() else selectedChecker.value!!.getPossibleAttackMoves()
         for ((rowOffset, colOffset) in attackDirections){
             val newRow = checker.row + rowOffset
             val newCol = checker.col + colOffset
@@ -175,6 +180,8 @@ class GameViewModel : ViewModel() {
     }
     fun moveChecker(newRow: Int, newCol: Int) {
         selectedChecker.value?.moveChecker(newRow,newCol)
+        println("После перехода")
+        println(selectedChecker.value)
     }
 
     fun currentCheckerValue(): Checker? {
@@ -203,5 +210,28 @@ class GameViewModel : ViewModel() {
         else{
             this.currentBlackCount.value = this.currentBlackCount.value!!.minus(1)
         }
+    }
+
+    //ИИ врага
+    fun chooseNextChecker():Checker?{
+        val enemyCheckers = this.checkers.value!!.filter { it.isWhite != isPlayerWhite.value }
+        for(checker in enemyCheckers){
+            this.selectedChecker.value = checker
+            val possibleMoves = this.getPossibleMovesWithHighlights()
+            println("Следующий ход врага")
+            println(possibleMoves)
+            println(checker)
+            if(possibleMoves.first.isNotEmpty() || possibleMoves.second.isNotEmpty()){
+                return checker
+            }
+        }
+        return null
+    }
+    fun chooseNextMove():List<Int>?{
+        if(currentAttack.isEmpty() && currentMove.isEmpty()){
+            return null
+        }
+        val nextMove:List<Int> = if(currentAttack.isEmpty()) currentMove.random().toList() else currentAttack.random().toList().dropLast(1).map { it as Int }
+        return nextMove
     }
 }

@@ -39,7 +39,7 @@ data class Checker(var row: Int, var col: Int, val isWhite: Boolean,var isQueen:
     fun moveChecker(row:Int,col:Int){
         this.row = row;
         this.col = col;
-        if(row==0){
+        if(row==0 || row==7){
             this.upgradeToQueen()
         }
     }
@@ -75,5 +75,11 @@ data class Checker(var row: Int, var col: Int, val isWhite: Boolean,var isQueen:
             }
             return res
         }
+    }
+    fun getPossibleEnemyMoves(): List<Pair<Int, Int>> {
+        return getPossibleMoves().map { Pair(-1 * it.first,it.second) }
+    }
+    fun getPossibleEnemyAttackMoves():List<Pair<Int,Int>>{
+        return getPossibleAttackMoves().map { Pair(-1 * it.first,it.second) }
     }
 }

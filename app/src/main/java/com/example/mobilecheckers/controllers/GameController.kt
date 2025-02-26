@@ -1,8 +1,11 @@
 package com.example.mobilecheckers.controllers
 
 import CheckerView
+import DatabaseHelper
 import GameViewModel
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -27,9 +30,15 @@ import com.example.mobilecheckers.MainActivity
 import com.example.mobilecheckers.R
 import com.example.mobilecheckers.customComponents.StatTextField
 import com.example.mobilecheckers.models.Checker
+import com.example.mobilecheckers.models.Player
 import com.example.mobilecheckers.ui.theme.BlackCell
 import com.example.mobilecheckers.ui.theme.WhiteCell
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.min
+import kotlin.random.Random
 
 private const val s = "#7C4A33"
 
@@ -83,35 +92,60 @@ class GameController(private val gameActivity: GameActivity) {
             viewModel.selectedChecker.observe(gameActivity) {
                 this.updateHighlights(gridLayout)
             }
+            if(!viewModel.getIsPlayerWhite()){
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(2000) // 2 секунды задержки
+                    enemyMoveCall(true)
+                }
+            }
         }
 
     }
+    //Функция вызова хода противника
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun enemyMoveCall(chooseNextChecker:Boolean){
+        if(viewModel.getIsPlayerWhite() && viewModel.getCurrentPlayerTurn() == 1
+            || !viewModel.getIsPlayerWhite() && viewModel.getCurrentPlayerTurn() == 0){
+            val gridLayout: GridLayout = gameActivity.findViewById(R.id.checkersBoard);
+            if(chooseNextChecker)viewModel.chooseNextChecker()
+            val nextMove:List<Int>? = viewModel.chooseNextMove()
+            if(nextMove==null) setWinner()
+            else{
+                val enemyCell = gridLayout.getChildAt(nextMove[0] * 8 + nextMove[1]) as FrameLayout
+                changeCheckerPosition(gridLayout,enemyCell)
+            }
+        }
+    }
+    //Функция изменения текущего хода
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun nextTurn(){
+        viewModel.increaseTurnCount()
+        viewModel.changeCurrentTurn()
+        setWinner()
+    }
+
     fun setupStatPanel(view:View){
         view.post {
             val currentTurn = view.findViewById<StatTextField>(R.id.playerMoveText)
             val currentTurnText = currentTurn.findViewById<TextView>(R.id.numberField)
             viewModel.currentPlayerTurn.observe(gameActivity) {
                 currentTurnText.text = viewModel.getCurrentPlayerTurn().toString()
-                println(currentTurnText.text)
             }
             val playerMoveCount = view.findViewById<StatTextField>(R.id.playerMoveCountText)
             val playerMoveCountText = playerMoveCount.findViewById<TextView>(R.id.numberField)
             viewModel.currentTurnCount.observe(gameActivity) {
                 playerMoveCountText.text = viewModel.getCurrentTurnCount().toString()
-                println(playerMoveCountText.text)
             }
             val whiteCount = view.findViewById<StatTextField>(R.id.whiteCountText)
             val whiteCountText = whiteCount.findViewById<TextView>(R.id.numberField)
             viewModel.currentWhiteCount.observe(gameActivity) {
                 whiteCountText.text = viewModel.getCurrentWhiteCount().toString()
-                println(whiteCountText.text)
             }
 
             val blackCount = view.findViewById<StatTextField>(R.id.blackCountText)
             val blackCountText = blackCount.findViewById<TextView>(R.id.numberField)
             viewModel.currentBlackCount.observe(gameActivity) {
                 blackCountText.text = viewModel.getCurrentBlackCount().toString()
-                println(blackCountText.text)
             }
         }
     }
@@ -134,7 +168,6 @@ class GameController(private val gameActivity: GameActivity) {
         if(attackMoves.isEmpty()){
             for ((row, col) in normalMoves) {
                 val index = row * 8 + col
-                println(gridLayout.children)
                 val cell = gridLayout.getChildAt(index)
                 cell?.setBackgroundColor(Color.GREEN)
                 highlightedCells.add(cell)
@@ -143,7 +176,6 @@ class GameController(private val gameActivity: GameActivity) {
         else{
             for ((row, col, checker) in attackMoves) {
                 val index = row * 8 + col
-                println(gridLayout.children)
                 val cell = gridLayout.getChildAt(index)
                 cell?.setBackgroundColor(Color.GREEN)
                 highlightedCells.add(cell)
@@ -155,7 +187,6 @@ class GameController(private val gameActivity: GameActivity) {
             }
         }
     }
-
     private fun clearHighlights() {
         for (cell in highlightedCells) {
             cell.setBackgroundColor(BlackCell.toArgb())
@@ -297,32 +328,53 @@ class GameController(private val gameActivity: GameActivity) {
         })
         newCell.addView(newCheckerView)
 
+        val oldAttackMoves = viewModel.currentAttack
         val newAttackMoves = viewModel.getPossibleMovesWithHighlights().second
+        val checker = viewModel.currentCheckerValue()
         viewModel.clearCurrentChecker()
-        if(newAttackMoves.isNotEmpty()) viewModel.selectChecker(checkerView.checker)
+        if(newAttackMoves.isNotEmpty() and oldAttackMoves.isNotEmpty()) {
+            viewModel.selectedChecker.value = checker
+            enemyMoveCall(false)
+        }
         else{
-            viewModel.increaseTurnCount()
-            viewModel.changeCurrentTurn()
-            setWinner()
+            nextTurn()
+            enemyMoveCall(true)
         }
     }
 
     // Устанавливаем победителя
+    @RequiresApi(Build.VERSION_CODES.O)
     fun setWinner(){
         if(viewModel.getCurrentBlackCount() == 0 && viewModel.getIsPlayerWhite()){
-            showToastAndNavigate(0)
+            showToastAndNavigate("игрок")
         }
         else if (viewModel.getCurrentWhiteCount() == 0 && !viewModel.getIsPlayerWhite()){
-            showToastAndNavigate(1)
+            showToastAndNavigate("игрок")
+        }
+        else if (viewModel.getCurrentWhiteCount() == 0 && viewModel.getIsPlayerWhite()){
+            showToastAndNavigate("бот")
+        }
+        else if (viewModel.getCurrentBlackCount() == 0 && !viewModel.getIsPlayerWhite()){
+            showToastAndNavigate("бот")
         }
     }
-    fun showToastAndNavigate(winner:Int) {
+    fun showToastAndNavigate(winner:String) {
         Toast.makeText(gameActivity, "Победитель ${winner}", Toast.LENGTH_SHORT).show()
 
         // Задержка перед переходом (чтобы Toast успел показаться)
         Handler(Looper.getMainLooper()).postDelayed({
             val intent = Intent(gameActivity, MainActivity::class.java)
             gameActivity.startActivity(intent)
+            val dbHelper = DatabaseHelper(gameActivity)
+            val sharedPref: SharedPreferences = gameActivity.getSharedPreferences("MySharedPreferences", Context.MODE_PRIVATE)
+            val shId = sharedPref.getString("id","-1")!!.toLong()
+            val currentPlayer = dbHelper.getPlayerById(shId)!!
+            val meanTurnCount = ((currentPlayer.wins+currentPlayer.losses) * currentPlayer.averageMoves + viewModel.getCurrentTurnCount())/(currentPlayer.wins+currentPlayer.losses+1)
+
+            var upgradePlayer:Player? = null
+            if(winner == "игрок") upgradePlayer = Player(currentPlayer.nickname,currentPlayer.wins +1, currentPlayer.losses, meanTurnCount,currentPlayer.id)
+            else upgradePlayer = Player(currentPlayer.nickname,currentPlayer.wins, currentPlayer.losses+1, meanTurnCount,currentPlayer.id)
+            dbHelper.updatePlayer(upgradePlayer)
         }, 3000) // 1 секунда задержки
     }
 
